@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<script src="https://fb.me/react-with-addons-0.13.3.js"></script>
+	<script src="JSXTransformer-0.13.3.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script src="typed.js"></script>
+
+    <script type="text/jsx">
+// https://github.com/liamzebedee/reactjs-contenteditable/blob/master/ContentEditable.jsx
+// I totally wrote this.
+var ContentEditable = React.createClass({
+    render: function(){
+        return (
+        	<span ref="input" onKeyDown={this.props.onKeyUp} onInput={this.handleInput} onBlur={this.handleChange} contentEditable="true" placeholder={this.props.placeholder} dangerouslySetInnerHTML={{__html: this.props.html}}>
+        	</span>
+        );
+    },
+    
+    shouldComponentUpdate: function(nextProps){
+        return nextProps.html !== this.getDOMNode().innerHTML;
+    },
+
+    handleChange: function(){
+        var html = this.getDOMNode().innerHTML;
+        if (this.props.onChange && html !== this.lastHtml) {
+            this.props.onChange({
+                target: {
+                    value: html
+                }
+            });
+        }
+        this.lastHtml = html;
+    }
+});
+
+
+
+var Interface = React.createClass({
+  render: function() {
+    var style = {
+        direction: 'ltr',
+		height: "100%",
+		overflow: 'hidden',
+		position: 'relative'
+    };
+
+    return <div>
+    	<div id="notice">UX design prototype by <a href="https://github.com/liamzebedee">@liamzebedee</a> - socraticDialogue-esque natural language interface, inspired by <a href="http://www.imdb.com/title/tt1798709/">Her</a></div>
+    	<header>
+    		<h1 style={{ opacity: 0.95 }}>Metric</h1>
+    		<h2>I want to improve myself</h2>
+    	</header>
+      <Conversation style={style}/>
+    </div>;
+  }
+});
+
+var Query = React.createClass({
+	getInitialState: function(){
+		return {
+			isSheDoneTyping: false,
+			me: {
+				content: ""
+			}
+		};
+	},
+
+	handleSheIsDoneTyping: function(){
+		this.setState({ isSheDoneTyping: true });
+	},
+
+	render: function(){
+		return (
+			<div className={"query"}>
+				<HerDialogue {...this.props.her} onDoneTyping={this.handleSheIsDoneTyping}/>
+				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyUp={this.props.onKeyUp}/> : '' }
+			</div>
+		);
+	}
+});
+
+var HerDialogue = React.createClass({
+	componentDidMount: function(){
+		this.typeContent();
+	},
+
+	typeContent: function(){
+		var self = this;
+		$(React.findDOMNode(this.refs.contentContainer)).typed({
+			strings: [this.props.content],
+			callback: self.props.onDoneTyping
+		});
+	},
+
+	render: function(){
+		return (
+			<span className={"her"} ref="contentContainer"></span>
+		);
+	}
+});
+
+var MyDialogue = React.createClass({
+	render: function(){
+		return (
+			<span className={"me"}>
+				<ContentEditable placeholder={this.props.placeholder} onKeyUp={this.props.onKeyUp}/>
+			</span>
+		);
+	}
+});
+
+
+var Conversation = React.createClass({
+	getInitialState: function(){
+		return {
+			queries: [
+		  		{ 
+		  			her: { content: "What do you want to improve?" }, 
+		  			me: { placeholder: "My health." }
+		  		},
+		  		{
+		  			her: { content: "And why do you want to improve this?" },
+		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
+		  		},
+		  		{
+		  			her: { content: "Oh I see. So how are you going to track it?" },
+		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
+		  		}
+		  	],
+		  	currentQueryIndex: 0
+		};
+	},
+
+	handleKeyUp: function(i, event){
+		if(event.key === 'Enter') {
+			this.advanceToNextQuery();
+			event.stopPropagation();
+		}
+	},
+
+	advanceToNextQuery: function(){
+		this.setState({ currentQueryIndex: this.state.currentQueryIndex + 1 });
+	},
+
+	render: function() {
+	  	var queries = this.state.queries;
+	    var queriesView = []; 
+	    for(var i = 0, query; i <= this.state.currentQueryIndex; i++) {
+	    	query = this.state.queries[i];
+	        queriesView.push(<Query {...query} key={i} onKeyUp={this.handleKeyUp.bind(this, i)}/>);
+	    }
+	    
+	    return <div className="convo">
+	      {queriesView}
+	      <div className="typed-cursor"></div>
+	    </div>;
+	}
+});
+
+React.render(<Interface/>, document.body);
+
+    </script>
+
+    <link href='http://fonts.googleapis.com/css?family=Oxygen:400,300,700' rel='stylesheet' type='text/css'>
+<style>
+/* I'll admit this is a dodgy bug-ridden implementation of 50% of a grid system, but this is just a demo. */
+body {
+	font-family: 'Oxygen', sans-serif;
+	background: #EFE2D9;
+	margin-left: 15px;
+	margin-right: 15px;
+	margin-top: 0px;
+}
+#notice {
+	vertical-align: middle;
+	background: #333;
+	display: inline-block;
+	margin-bottom: 0.5em;
+	color: white !important;
+	font-size: 1em;
+	width: 100%;
+	margin-left: -15px;
+	padding-right: 30px;
+}
+#notice a {
+	color: white!important;
+	font-weight: 700;
+	text-decoration: none;
+}
+.green {color: #9F9D64;}
+.red {color: #B93822;}
+.light-brown {color: #DAA96F;}
+.dark-brown { color: #AE9479;}
+.blue { color: #92C1C9;}
+.skin { color: #EFE2D9; }
+
+.query {
+	display: block;
+	margin-bottom: 2em;
+	font-size: 36px;
+	max-width: 25em;
+}
+
+.me {
+	color: #B93822;
+	padding-left: 1em;
+	display: block;
+}
+.her {
+	color: #18C1C6;
+	display: block;
+}
+
+header {
+	font-size: 14px;
+	color: #4DC1C6;
+	opacity: 0.4;
+	padding-bottom: 2em;
+}
+header h1, header h2 {
+	display: inline;
+}
+header h2 { padding-left: 3em;}
+
+.convo {
+	margin-left: 9em;
+}
+
+
+[contentEditable] {
+	cursor: text;
+}
+
+[contentEditable="true"]:active,
+[contentEditable="true"]:focus{
+	border: none;
+	outline: none;
+}
+
+[contenteditable=true]:empty {
+	min-width: 5em;
+	min-height: 1em;
+	display: inline-block;
+}
+[contenteditable=true]:empty:after {
+  content: attr(placeholder);
+  opacity: 0.3;
+}
+
+
+
+
+
+
+
+.typed-cursor{
+    opacity: 1;
+    -webkit-animation: blink 0.7s infinite;
+    -moz-animation: blink 0.7s infinite;
+    animation: blink 0.7s infinite;
+    content: "|";
+}
+@keyframes blink{
+    0% { opacity:1; }
+    50% { opacity:0; }
+    100% { opacity:1; }
+}
+@-webkit-keyframes blink{
+    0% { opacity:1; }
+    50% { opacity:0; }
+    100% { opacity:1; }
+}
+@-moz-keyframes blink{
+    0% { opacity:1; }
+    50% { opacity:0; }
+    100% { opacity:1; }
+}
+</style>
+
+
+
+  </head>
+  <body>
+  </body>
+</html>
