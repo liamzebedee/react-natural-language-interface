@@ -10,9 +10,14 @@
 // https://github.com/liamzebedee/reactjs-contenteditable/blob/master/ContentEditable.jsx
 // I totally wrote this.
 var ContentEditable = React.createClass({
+	componentDidMount: function(){
+		// TODO this should be a prop
+		React.findDOMNode(this.refs.input).focus();
+	},
+
     render: function(){
         return (
-        	<span ref="input" onKeyDown={this.props.onKeyUp} onInput={this.handleInput} onBlur={this.handleChange} contentEditable="true" placeholder={this.props.placeholder} dangerouslySetInnerHTML={{__html: this.props.html}}>
+        	<span ref="input" onKeyDown={this.props.onKeyUp} onInput={this.handleInput} onBlur={this.handleChange} contentEditable={this.props.enabled} placeholder={this.props.placeholder} dangerouslySetInnerHTML={{__html: this.props.html}}>
         	</span>
         );
     },
@@ -74,7 +79,7 @@ var Query = React.createClass({
 		return (
 			<div className={"query"}>
 				<HerDialogue {...this.props.her} onDoneTyping={this.handleSheIsDoneTyping}/>
-				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyUp={this.props.onKeyUp}/> : '' }
+				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyUp={this.props.onKeyUp} enabled={this.props.enabled}/> : null }
 			</div>
 		);
 	}
@@ -89,8 +94,14 @@ var HerDialogue = React.createClass({
 		var self = this;
 		$(React.findDOMNode(this.refs.contentContainer)).typed({
 			strings: [this.props.content],
-			callback: self.props.onDoneTyping
+			callback: self.onDoneTyping,
+			cursorChar: '',
+			typeSpeed: -5
 		});
+	},
+
+	onDoneTyping: function(){
+		this.props.onDoneTyping();
 	},
 
 	render: function(){
@@ -104,7 +115,7 @@ var MyDialogue = React.createClass({
 	render: function(){
 		return (
 			<span className={"me"}>
-				<ContentEditable placeholder={this.props.placeholder} onKeyUp={this.props.onKeyUp}/>
+				<ContentEditable enabled={this.props.enabled} placeholder={this.props.placeholder} onKeyUp={this.props.onKeyUp}/>
 			</span>
 		);
 	}
@@ -148,12 +159,12 @@ var Conversation = React.createClass({
 	    var queriesView = []; 
 	    for(var i = 0, query; i <= this.state.currentQueryIndex; i++) {
 	    	query = this.state.queries[i];
-	        queriesView.push(<Query {...query} key={i} onKeyUp={this.handleKeyUp.bind(this, i)}/>);
+	    	var lastQuery = (i == this.state.currentQueryIndex);
+	        queriesView.push(<Query {...query} key={i} onKeyUp={this.handleKeyUp.bind(this, i)} enabled={lastQuery}/>);
 	    }
 	    
 	    return <div className="convo">
 	      {queriesView}
-	      <div className="typed-cursor"></div>
 	    </div>;
 	}
 });
