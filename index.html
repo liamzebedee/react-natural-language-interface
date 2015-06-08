@@ -17,7 +17,7 @@ var ContentEditable = React.createClass({
 
     render: function(){
         return (
-        	<span ref="input" onKeyDown={this.props.onKeyUp} onInput={this.handleInput} onBlur={this.handleChange} contentEditable={this.props.enabled} placeholder={this.props.placeholder} dangerouslySetInnerHTML={{__html: this.props.html}}>
+        	<span ref="input" onKeyPress={this.props.onKeyPress} onInput={this.handleChange} onBlur={this.handleChange} contentEditable={this.props.enabled} placeholder={this.props.placeholder} dangerouslySetInnerHTML={{__html: this.props.html}}>
         	</span>
         );
     },
@@ -39,8 +39,6 @@ var ContentEditable = React.createClass({
     }
 });
 
-
-
 var Interface = React.createClass({
   render: function() {
     var style = {
@@ -61,6 +59,54 @@ var Interface = React.createClass({
   }
 });
 
+var Conversation = React.createClass({
+	getInitialState: function(){
+		return {
+			queries: [
+		  		{ 
+		  			her: { content: "What do you want to improve?" }, 
+		  			me: { placeholder: "My health." }
+		  		},
+		  		{
+		  			her: { content: "And why do you want to improve this?" },
+		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
+		  		},
+		  		{
+		  			her: { content: "Oh I see. So how are you going to track it?" },
+		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
+		  		}
+		  	],
+		  	currentQueryIndex: 0
+		};
+	},
+
+	handleKeyPress: function(i, event){
+		console.log(event.key);
+		if(event.key === 'Enter') {
+			this.advanceToNextQuery(i);
+			event.stopPropagation();
+		}
+	},
+
+	advanceToNextQuery: function(i){
+		this.setState({ currentQueryIndex: (i || this.state.currentQueryIndex) + 1 });
+	},
+
+	render: function() {
+	  	var queries = this.state.queries;
+	    var queriesView = []; 
+	    for(var i = 0, query; i <= this.state.currentQueryIndex; i++) {
+	    	query = this.state.queries[i];
+	    	var lastQuery = (i == this.state.currentQueryIndex);
+	        queriesView.push(<Query {...query} key={i} onKeyPress={this.handleKeyPress.bind(this, i)} enabled={lastQuery}/>);
+	    }
+	    
+	    return <div className="convo">
+	      {queriesView}
+	    </div>;
+	}
+});
+
 var Query = React.createClass({
 	getInitialState: function(){
 		return {
@@ -79,7 +125,7 @@ var Query = React.createClass({
 		return (
 			<div className={"query"}>
 				<HerDialogue {...this.props.her} onDoneTyping={this.handleSheIsDoneTyping}/>
-				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyUp={this.props.onKeyUp} enabled={this.props.enabled}/> : null }
+				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyPress={this.props.onKeyPress} enabled={this.props.enabled}/> : null }
 			</div>
 		);
 	}
@@ -115,57 +161,9 @@ var MyDialogue = React.createClass({
 	render: function(){
 		return (
 			<span className={"me"}>
-				<ContentEditable enabled={this.props.enabled} placeholder={this.props.placeholder} onKeyUp={this.props.onKeyUp}/>
+				<ContentEditable enabled={this.props.enabled} onKeyPress={this.props.onKeyPress} placeholder={this.props.placeholder}/>
 			</span>
 		);
-	}
-});
-
-
-var Conversation = React.createClass({
-	getInitialState: function(){
-		return {
-			queries: [
-		  		{ 
-		  			her: { content: "What do you want to improve?" }, 
-		  			me: { placeholder: "My health." }
-		  		},
-		  		{
-		  			her: { content: "And why do you want to improve this?" },
-		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
-		  		},
-		  		{
-		  			her: { content: "Oh I see. So how are you going to track it?" },
-		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
-		  		}
-		  	],
-		  	currentQueryIndex: 0
-		};
-	},
-
-	handleKeyUp: function(i, event){
-		if(event.key === 'Enter') {
-			this.advanceToNextQuery();
-			event.stopPropagation();
-		}
-	},
-
-	advanceToNextQuery: function(){
-		this.setState({ currentQueryIndex: this.state.currentQueryIndex + 1 });
-	},
-
-	render: function() {
-	  	var queries = this.state.queries;
-	    var queriesView = []; 
-	    for(var i = 0, query; i <= this.state.currentQueryIndex; i++) {
-	    	query = this.state.queries[i];
-	    	var lastQuery = (i == this.state.currentQueryIndex);
-	        queriesView.push(<Query {...query} key={i} onKeyUp={this.handleKeyUp.bind(this, i)} enabled={lastQuery}/>);
-	    }
-	    
-	    return <div className="convo">
-	      {queriesView}
-	    </div>;
 	}
 });
 
@@ -208,7 +206,7 @@ body {
 
 .query {
 	display: block;
-	margin-bottom: 2em;
+	margin-bottom: 1em;
 	font-size: 36px;
 	max-width: 25em;
 }
@@ -259,34 +257,6 @@ header h2 { padding-left: 3em;}
   opacity: 0.3;
 }
 
-
-
-
-
-
-
-.typed-cursor{
-    opacity: 1;
-    -webkit-animation: blink 0.7s infinite;
-    -moz-animation: blink 0.7s infinite;
-    animation: blink 0.7s infinite;
-    content: "|";
-}
-@keyframes blink{
-    0% { opacity:1; }
-    50% { opacity:0; }
-    100% { opacity:1; }
-}
-@-webkit-keyframes blink{
-    0% { opacity:1; }
-    50% { opacity:0; }
-    100% { opacity:1; }
-}
-@-moz-keyframes blink{
-    0% { opacity:1; }
-    50% { opacity:0; }
-    100% { opacity:1; }
-}
 </style>
 
 
