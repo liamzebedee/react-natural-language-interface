@@ -12,7 +12,11 @@
 var ContentEditable = React.createClass({
 	componentDidMount: function(){
 		// TODO this should be a prop
-		React.findDOMNode(this.refs.input).focus();
+		if(this.props.focus) React.findDOMNode(this.refs.input).focus();
+	},
+
+	componentDidUpdate: function(){
+		if(this.props.focus) React.findDOMNode(this.refs.input).focus();
 	},
 
     render: function(){
@@ -28,6 +32,7 @@ var ContentEditable = React.createClass({
 
     handleChange: function(){
         var html = this.getDOMNode().innerHTML;
+        html = html.replace(/[\t\r\s]*/g, ''); // cleanse
         if (this.props.onChange && html !== this.lastHtml) {
             this.props.onChange({
                 target: {
@@ -73,7 +78,7 @@ var Conversation = React.createClass({
 		  		},
 		  		{
 		  			her: { content: "Oh I see. So how are you going to track it?" },
-		  			me: { placeholder: "Because good health isn't just a state, it's a habit, and I need to pay attention to it" }
+		  			me: { placeholder: "By measuring my average levels of sleep, hours of exercise and intensity, mood patterns and eating habits." }
 		  		}
 		  	],
 		  	currentQueryIndex: 0
@@ -81,15 +86,17 @@ var Conversation = React.createClass({
 	},
 
 	handleKeyPress: function(i, event){
-		console.log(event.key);
 		if(event.key === 'Enter') {
 			this.advanceToNextQuery(i);
 			event.stopPropagation();
+			event.preventDefault();
+			// e.nativeEvent.stopImmediatePropagation();
 		}
 	},
 
 	advanceToNextQuery: function(i){
-		this.setState({ currentQueryIndex: (i || this.state.currentQueryIndex) + 1 });
+		if(this.state.currentQueryIndex > i) return;
+		this.setState({ currentQueryIndex: this.state.currentQueryIndex + 1 });
 	},
 
 	render: function() {
@@ -111,6 +118,7 @@ var Query = React.createClass({
 	getInitialState: function(){
 		return {
 			isSheDoneTyping: false,
+			enabled: this.props.enabled,
 			me: {
 				content: ""
 			}
@@ -121,11 +129,19 @@ var Query = React.createClass({
 		this.setState({ isSheDoneTyping: true });
 	},
 
+	onHover: function(){
+		this.setState({ enabled: true });
+	},
+
+	onBlur: function(){
+		this.setState({ enabled: false });
+	},
+
 	render: function(){
 		return (
-			<div className={"query"}>
+			<div className={"query"} onClick={this.onHover} onHover={this.onHover} onBlur={this.onBlur}>
 				<HerDialogue {...this.props.her} onDoneTyping={this.handleSheIsDoneTyping}/>
-				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyPress={this.props.onKeyPress} enabled={this.props.enabled}/> : null }
+				{ this.state.isSheDoneTyping ? <MyDialogue {...this.props.me} onKeyPress={this.props.onKeyPress} enabled={this.state.enabled}/> : null }
 			</div>
 		);
 	}
@@ -161,7 +177,7 @@ var MyDialogue = React.createClass({
 	render: function(){
 		return (
 			<span className={"me"}>
-				<ContentEditable enabled={this.props.enabled} onKeyPress={this.props.onKeyPress} placeholder={this.props.placeholder}/>
+				<ContentEditable enabled={this.props.enabled} focus={this.props.enabled} onKeyPress={this.props.onKeyPress} placeholder={this.props.placeholder}/>
 			</span>
 		);
 	}
@@ -241,18 +257,18 @@ header h2 { padding-left: 3em;}
 	cursor: text;
 }
 
-[contentEditable="true"]:active,
-[contentEditable="true"]:focus{
+[contentEditable]:active,
+[contentEditable]:focus{
 	border: none;
 	outline: none;
 }
 
-[contenteditable=true]:empty {
+[contenteditable]:empty {
 	min-width: 5em;
 	min-height: 1em;
 	display: inline-block;
 }
-[contenteditable=true]:empty:after {
+[contenteditable]:empty:after {
   content: attr(placeholder);
   opacity: 0.3;
 }
